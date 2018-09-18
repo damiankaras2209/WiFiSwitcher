@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">WiFi Switcher</string>
+    <string name="switch_threshold">Network switch threshold (in dBm):</string>
+    <string name="scan_frequency">Scan frequency (in seconds):</string>
 </resources>

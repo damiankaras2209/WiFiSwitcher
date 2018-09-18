@@ -3,6 +3,7 @@ package me.kptmusztarda.wifiswitcher;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
@@ -46,8 +47,11 @@ public class WiFiScanReceiver extends BroadcastReceiver {
                     Logger.log(TAG, "Strongest network is \"" + strongestWiFi.SSID + "\" with RSSI: " + Integer.toString(maxLevel) + " dBm");
                     Logger.log(TAG, "Current network is \"" + currentWiFi.getSSID() + "\" with RSSI: " + Integer.toString(currentWiFi.getRssi()) + " dBm");
 
-                    if (!currentWiFi.getSSID().contains(strongestWiFi.SSID) && currentWiFi.getRssi() < THRESHOLD) {
-                        Logger.log(TAG, "Switching network");
+                    SharedPreferences preferences = context.getSharedPreferences(context.getPackageName() + Integer.toString(2137), Context.MODE_PRIVATE);
+                    int threshold = preferences.getInt("threshold", -80);
+
+                    if (!currentWiFi.getSSID().contains(strongestWiFi.SSID) && currentWiFi.getRssi() < threshold) {
+                        Logger.log(TAG, "Switching network (threshold is: " + threshold + " dBm)");
 
                         int networkId = -1;
                         for (WifiConfiguration tmp : mWifiManager.getConfiguredNetworks()) {
@@ -57,7 +61,7 @@ public class WiFiScanReceiver extends BroadcastReceiver {
                             }
                         }
                     } else {
-                        Logger.log(TAG, "No need to switch network");
+                        Logger.log(TAG, "No need to switch network (threshold is: " + threshold + ")");
                     }
                 }
             }
@@ -67,6 +71,7 @@ public class WiFiScanReceiver extends BroadcastReceiver {
             if(state == WifiManager.WIFI_STATE_ENABLED) {
                 Logger.log(TAG, "WiFi is on");
 
+                SharedPreferences preferences = context.getSharedPreferences(context.getPackageName() + Integer.toString(2137), Context.MODE_PRIVATE);
                 timer = new Timer();
                 timer.schedule(new TimerTask() {
                     @Override
@@ -79,8 +84,10 @@ public class WiFiScanReceiver extends BroadcastReceiver {
             } else if(state == WifiManager.WIFI_STATE_DISABLED) {
                 Logger.log(TAG, "WiFi is off");
 
-                timer.cancel();
-                timer.purge();
+                if(timer != null) {
+                    timer.cancel();
+                    timer.purge();
+                }
             }
         }
 

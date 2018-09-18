@@ -11,17 +11,13 @@ import android.support.annotation.Nullable;
 public class WiFiScanReceiverService extends Service {
 
     private final static String TAG = "WiFiScanReceiverService";
+    private static boolean isRunning;
     private WiFiScanReceiver wiFiScanReceiver;
-
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         startForeground(startId, new Notification());
+        isRunning = true;
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
         intentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
@@ -38,10 +34,20 @@ public class WiFiScanReceiverService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Logger.log(TAG, "Service.onDestroy");
-        sendBroadcast(new Intent(this, ServiceStarter.class));
+        isRunning = false;
         if(wiFiScanReceiver!=null) {
             unregisterReceiver(wiFiScanReceiver);
             Logger.log(TAG, "WiFiScanReceiver is registered");
         }
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    protected static boolean isRunning(){
+        return isRunning;
     }
 }

@@ -2,10 +2,12 @@ package me.kptmusztarda.wifiswitcher;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -17,6 +19,8 @@ import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
 import java.util.List;
 
@@ -44,11 +48,64 @@ public class MainActivity extends Activity {
 
         Logger.setDirectory("", "wifi_switcher_log.txt");
 
-        sendBroadcast(new Intent(this, ServiceStarter.class));
+        SharedPreferences preferences = getSharedPreferences(getPackageName() + Integer.toString(2137), Context.MODE_PRIVATE);
+        final SharedPreferences.Editor prefEditor = preferences.edit();
+
+        final TextView thresholdTextView = findViewById(R.id.textView_treshold_value);
+        SeekBar thresholdSeekBar = findViewById(R.id.seekBar_threshold);
+        thresholdSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                thresholdTextView.setText(Integer.toString(i - 127));
+
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                prefEditor.putInt("threshold", seekBar.getProgress() -127);
+                prefEditor.apply();
+            }
+        });
+        thresholdSeekBar.setProgress(preferences.getInt("threshold", -80) + 127);
+
+        final TextView frequencyTextView = findViewById(R.id.textView_scan_frequency);
+        SeekBar frequencySeekBar = findViewById(R.id.seekBar_scan_frequency);
+        frequencySeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                frequencyTextView.setText(Integer.toString(i));
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                prefEditor.putInt("frequency", seekBar.getProgress());
+                prefEditor.apply();
+            }
+        });
+        frequencySeekBar.setProgress(preferences.getInt("frequency", 30));
+
+        if(!WiFiScanReceiverService.isRunning())
+            startForegroundService(new Intent(this, WiFiScanReceiverService.class));
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
     }
+
+//    private boolean isMyServiceRunning(Class<?> serviceClass) {
+//        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+//        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+//            if (serviceClass.getName().equals(service.service.getClassName())) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
 }
