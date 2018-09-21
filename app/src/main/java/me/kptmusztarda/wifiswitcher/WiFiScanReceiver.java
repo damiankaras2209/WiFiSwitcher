@@ -18,7 +18,6 @@ import java.util.TimerTask;
 public class WiFiScanReceiver extends BroadcastReceiver {
 
     private final static String TAG = "WiFiScanReceiver";
-    private final static int THRESHOLD = -70;
 
     private Timer timer;
 
@@ -44,24 +43,25 @@ public class WiFiScanReceiver extends BroadcastReceiver {
 
                 if (strongestWiFi != null) {
 
-                    Logger.log(TAG, "Strongest network is \"" + strongestWiFi.SSID + "\" with RSSI: " + Integer.toString(maxLevel) + " dBm");
-                    Logger.log(TAG, "Current network is \"" + currentWiFi.getSSID() + "\" with RSSI: " + Integer.toString(currentWiFi.getRssi()) + " dBm");
+                    String strongestSSID = "\"" + strongestWiFi.SSID + "\"";
+                    Logger.log(TAG, "Strongest network is " + strongestSSID + " with RSSI: " + Integer.toString(maxLevel) + " dBm");
+                    Logger.log(TAG, "Current network is " + currentWiFi.getSSID() + " with RSSI: " + Integer.toString(currentWiFi.getRssi()) + " dBm");
 
                     SharedPreferences preferences = context.getSharedPreferences(context.getPackageName() + Integer.toString(2137), Context.MODE_PRIVATE);
                     int threshold = preferences.getInt("threshold", -80);
 
-                    if (!currentWiFi.getSSID().contains(strongestWiFi.SSID) && currentWiFi.getRssi() < threshold) {
+                    if (!currentWiFi.getSSID().equals(strongestSSID) && currentWiFi.getRssi() < threshold) {
                         Logger.log(TAG, "Switching network (threshold is: " + threshold + " dBm)");
 
                         int networkId = -1;
                         for (WifiConfiguration tmp : mWifiManager.getConfiguredNetworks()) {
-                            if (tmp.SSID.contains(strongestWiFi.SSID)) {
+                            if (tmp.SSID.equals(strongestSSID)) {
                                 networkId = tmp.networkId;
                                 mWifiManager.enableNetwork(networkId, true);
                             }
                         }
                     } else {
-                        Logger.log(TAG, "No need to switch network (threshold is: " + threshold + ")");
+                        Logger.log(TAG, "No need to switch network (threshold is: " + threshold + " dBm)");
                     }
                 }
             }
@@ -72,14 +72,15 @@ public class WiFiScanReceiver extends BroadcastReceiver {
                 Logger.log(TAG, "WiFi is on");
 
                 SharedPreferences preferences = context.getSharedPreferences(context.getPackageName() + Integer.toString(2137), Context.MODE_PRIVATE);
+                final int delay = preferences.getInt("frequency", 60);
                 timer = new Timer();
                 timer.schedule(new TimerTask() {
                     @Override
                     public void run() {
                         mWifiManager.startScan();
-                        Logger.log(TAG, "Performing scan");
+                        Logger.log(TAG, "Performing scan (delay is: " + delay + "s)");
                     }
-                }, 5 * 1000, 20 * 1000);
+                }, 5 * 1000, delay * 1000);
 
             } else if(state == WifiManager.WIFI_STATE_DISABLED) {
                 Logger.log(TAG, "WiFi is off");
